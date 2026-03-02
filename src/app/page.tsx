@@ -119,49 +119,48 @@ export default function Home() {
   }, [isProcessing]);
 
   useEffect(() => {
-    // Verificar si hay webcam disponible
-    checkWebcamAvailability();
-    
-    // Intentar inicializar webcam al montar el componente
+    // En iOS, enumerateDevices() no reporta la cámara antes de tener permiso,
+    // así que intentamos directamente getUserMedia y detectamos disponibilidad por el resultado.
     startWebcam();
 
     return () => {
-      // Limpiar stream al desmontar
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
 
-  const checkWebcamAvailability = async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const hasVideoInput = devices.some(device => device.kind === 'videoinput');
-      setHasWebcam(hasVideoInput);
-    } catch (err) {
-      console.error('Error al verificar dispositivos:', err);
-      setHasWebcam(false);
-    }
-  };
-
   const startWebcam = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setIsCapturing(true);
-        setUseUpload(false);
-        setUploadedImage(null);
+    // Intentar primero con facingMode (más compatible con móviles/iPad),
+    // y si falla hacer fallback a constraints básicas.
+    const constraints: MediaStreamConstraints[] = [
+      { video: { facingMode: 'user' } },
+      { video: true },
+    ];
+
+    for (const constraint of constraints) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraint);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          // En iOS el video necesita llamar a play() explícitamente
+          videoRef.current.play().catch(() => {});
+          streamRef.current = stream;
+          setHasWebcam(true);
+          setIsCapturing(true);
+          setUseUpload(false);
+          setUploadedImage(null);
+        }
+        return; // éxito, salir del loop
+      } catch (err) {
+        console.warn('getUserMedia falló con constraint:', constraint, err);
       }
-    } catch (err) {
-      console.error('Error al acceder a la webcam:', err);
-      setHasWebcam(false);
-      setError('No se pudo acceder a la webcam. Puedes subir una imagen en su lugar.');
     }
+
+    // Si todos los intentos fallaron, no hay cámara disponible
+    console.error('No se pudo acceder a la webcam en ningún modo');
+    setHasWebcam(false);
+    setError('No se pudo acceder a la webcam. Puedes subir una imagen en su lugar.');
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
