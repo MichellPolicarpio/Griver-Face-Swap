@@ -106,10 +106,10 @@ export default function Home() {
       setCuriousFactIndex((i) => (i + 1) % GRIVER_FACTS.length);
     }, 5000);
 
-    // Progreso: ~1 minuto para llegar al 100% (1% cada 600 ms)
+    // Progreso: ~1 minuto + 10 segundos para llegar al 100% (1% cada 700 ms)
     const progressInterval = setInterval(() => {
       setFakeProgress((prev) => Math.min(100, prev + 1));
-    }, 600);
+    }, 700);
 
     return () => {
       clearInterval(statusInterval);
