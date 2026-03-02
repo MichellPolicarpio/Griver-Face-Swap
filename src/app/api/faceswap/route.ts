@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
       // Subir a hosting temporal para obtener URL pública (mejora detección de caras en Replicate)
       console.log('Subiendo imagen a hosting temporal para URL pública...');
       const formData = new FormData();
-      const blob = new Blob([buffer], { type: mime });
+      // Convertir Buffer de Node a ArrayBuffer para que TypeScript lo acepte como BlobPart
+      const arrayBuffer = Uint8Array.from(buffer).buffer;
+      const blob = new Blob([arrayBuffer], { type: mime });
       const ext = mime.includes('png') ? 'png' : 'jpg';
       formData.append('file', blob, `face.${ext}`);
 
