@@ -119,9 +119,13 @@ export default function Home() {
   }, [isProcessing]);
 
   useEffect(() => {
-    // En iOS, enumerateDevices() no reporta la cámara antes de tener permiso,
-    // así que intentamos directamente getUserMedia y detectamos disponibilidad por el resultado.
-    startWebcam();
+    // Comprobar soporte básico de cámara en el navegador,
+    // pero NO llamar a getUserMedia automáticamente (iOS requiere gesto del usuario).
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      setHasWebcam(true);
+    } else {
+      setHasWebcam(false);
+    }
 
     return () => {
       if (streamRef.current) {
