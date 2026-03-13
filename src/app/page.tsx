@@ -14,28 +14,28 @@ type Scenario = {
 // El modelo reemplaza la cara de esa persona por la tuya. Sin persona en la imagen → "No face found".
 const scenarios: Scenario[] = [
   {
-    id: 'warehouse',
-    name: 'Bodega',
-    imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800',
-    icon: '📦',
+    id: 'woman-a',
+    name: 'Mujer A',
+    imageUrl: 'https://i.postimg.cc/W4TRPH6F/Image-(2).jpg',
+    icon: 'A',
   },
   {
-    id: 'port',
-    name: 'Puerto/Barcos',
-    imageUrl: 'https://images.unsplash.com/photo-1506919258185-5198ed9393a6?w=800',
-    icon: '🚢',
+    id: 'woman-b',
+    name: 'Mujer B',
+    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800',
+    icon: 'B',
   },
   {
-    id: 'containers',
-    name: 'Contenedores',
-    imageUrl: 'https://www.agenciaaduanal.net/wp-content/uploads/2025/09/E-freight-y-aduana-digital-la-evolucion-del-despacho-electronico.jpg',
-    icon: '📋',
+    id: 'man-a',
+    name: 'Hombre A',
+    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb0b90c07c5?w=800',
+    icon: 'A',
   },
   {
-    id: 'customs',
-    name: 'Aduana',
-    imageUrl: 'https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800',
-    icon: '🏛️',
+    id: 'man-b',
+    name: 'Hombre B',
+    imageUrl: 'https://images.unsplash.com/photo-1525130413817-d45c1d127c42?w=800',
+    icon: 'B',
   },
 ];
 
@@ -384,7 +384,7 @@ export default function Home() {
                 onClick={switchToWebcam}
                 disabled={isProcessing}
               >
-                📷 Webcam
+                Webcam
               </button>
             )}
             <button
@@ -395,7 +395,7 @@ export default function Home() {
               }}
               disabled={isProcessing}
             >
-              📁 Subir Imagen
+              Subir Imagen
             </button>
           </div>
           
@@ -442,10 +442,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Sección derecha: Selector de escenarios */}
+        {/* Sección derecha: Selector de personas/escenarios */}
         <div className="scenarios-section">
-          <h2>Selecciona un Escenario</h2>
-          <p className="scenario-hint">Elige un escenario con una persona visible; verás cómo te verías tú en su lugar.</p>
+          <h2>Selecciona una Persona</h2>
+          <p className="scenario-hint">Elige una persona de referencia (Mujer A/B, Hombre A/B); verás cómo te verías tú en su lugar.</p>
           <div className="scenarios-grid">
             {scenarios.map((scenario) => (
               <button
@@ -488,7 +488,7 @@ export default function Home() {
       {/* Error */}
       {error && (
         <div className="error-message">
-          <span>⚠️</span> 
+          <span>!</span> 
           <div className="error-content">
             {error.split('\n').map((line, index) => (
               <div key={index} className={line.startsWith('Sugerencias:') || /^\d+\./.test(line.trim()) ? 'error-suggestion' : ''}>
@@ -557,9 +557,7 @@ export default function Home() {
                   <img src={resultImage!} alt="Simulación Griver" className="result-image" />
                 </div>
                 <div className="result-popup-actions">
-                  <button className="download-button" onClick={downloadResult}>
-                    📥 DESCARGAR IMAGEN
-                  </button>
+                  <button className="download-button" onClick={downloadResult}>DESCARGAR IMAGEN</button>
                   <button type="button" className="result-popup-close-button" onClick={() => setResultImage(null)}>
                     Cerrar
                   </button>
