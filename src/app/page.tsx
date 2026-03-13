@@ -121,7 +121,7 @@ export default function Home() {
   useEffect(() => {
     // Comprobar soporte básico de cámara en el navegador,
     // pero NO llamar a getUserMedia automáticamente (iOS requiere gesto del usuario).
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
       setHasWebcam(true);
     } else {
       setHasWebcam(false);
