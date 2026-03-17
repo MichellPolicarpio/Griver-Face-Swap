@@ -575,6 +575,28 @@ body {
   .transform-button--right {
     display: none;
   }
+
+  /* iPad horizontal: en el popup, evita scroll y muestra la imagen completa */
+  .result-popup {
+    overflow: hidden;
+    max-height: 90svh;
+  }
+
+  .result-popup .result-image-container {
+    /* reserva espacio para título + botones */
+    max-height: calc(90svh - 170px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .result-popup .result-image {
+    width: auto;
+    height: 100%;
+    max-height: 100%;
+    max-width: 86vw;
+    object-fit: contain;
+  }
 }
 
 /* iPad en vertical: apila mejor y evita que el preview “aplane” el resto */
