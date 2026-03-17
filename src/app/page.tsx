@@ -104,7 +104,6 @@ export default function Home() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [hasWebcam, setHasWebcam] = useState<boolean | null>(null);
   const [useUpload, setUseUpload] = useState(true);
-  const [isVideoReady, setIsVideoReady] = useState(false);
   const [customTargetUrl, setCustomTargetUrl] = useState('');
   const [curiousFactIndex, setCuriousFactIndex] = useState(0);
   const [statusMessageIndex, setStatusMessageIndex] = useState(0);
@@ -258,7 +257,6 @@ export default function Home() {
   const switchToWebcam = () => {
     setUseUpload(false);
     setUploadedImage(null);
-    setIsVideoReady(false);
     startWebcam();
   };
 
@@ -271,7 +269,6 @@ export default function Home() {
       videoRef.current.srcObject = null;
     }
     setIsCapturing(false);
-    setIsVideoReady(false);
     setUseUpload(true);
     setError(null);
   };
@@ -287,8 +284,10 @@ export default function Home() {
     let width = video.videoWidth;
     let height = video.videoHeight;
 
-    // Si el video aún no reporta dimensiones (común en iPad), abortar con null
-    if (!width || !height) return null;
+    if (!width || !height) {
+      setError('La cámara se está iniciando. Espera un momento e intenta de nuevo.');
+      return null;
+    }
 
     if (width < minWidth || height < minHeight) {
       const scale = Math.max(minWidth / width, minHeight / height);
@@ -368,8 +367,7 @@ export default function Home() {
   const isTransformDisabled =
     !(selectedScenario || customTargetUrl.trim()) ||
     isProcessing ||
-    (!isCapturing && !uploadedImage) ||
-    (!useUpload && isCapturing && !isVideoReady);
+    (!isCapturing && !uploadedImage);
 
   const transformLabel = isProcessing
     ? 'PROCESANDO...'
@@ -652,7 +650,6 @@ export default function Home() {
               muted
               className="webcam-video"
               style={{ display: !useUpload && isCapturing ? 'block' : 'none' }}
-              onLoadedMetadata={() => setIsVideoReady(true)}
             />
 
             {useUpload ? (
