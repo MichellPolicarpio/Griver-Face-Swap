@@ -565,6 +565,31 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* iPad horizontal: compactar botones para que “respiren” */
+  .mode-button {
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .scenario-button {
+    padding: 0.9rem 0.85rem;
+  }
+
+  .scenario-icon {
+    font-size: 2rem;
+  }
+
+  .scenario-name {
+    font-size: 0.9rem;
+    letter-spacing: 0.8px;
+  }
+
+  .transform-button {
+    padding: 0.95rem 1.05rem;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+  }
+
   /* iPad horizontal: botón debajo del preview (columna izquierda) */
   .transform-button--left {
     display: inline-block;
@@ -1177,6 +1202,21 @@ body {
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.35));
+  transform-origin: 50% 50%;
+  animation: griverLogoTurn 4s ease-in-out infinite;
+}
+
+/* Giro “puntual” cada 4s (gira y luego pausa) */
+@keyframes griverLogoTurn {
+  0%   { transform: rotate(0deg); }
+  18%  { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-loading-logo {
+    animation: none;
+  }
 }
 
 .modal-loading-title {
