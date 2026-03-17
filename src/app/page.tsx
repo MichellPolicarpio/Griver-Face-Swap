@@ -402,6 +402,17 @@ export default function Home() {
     document.body.removeChild(link);
   };
 
+  const isTransformDisabled =
+    !(selectedScenario || customTargetUrl.trim()) ||
+    isProcessing ||
+    (!isCapturing && !uploadedImage);
+
+  const transformLabel = isProcessing
+    ? 'PROCESANDO...'
+    : useUpload
+      ? 'TRANSFORMAR IMAGEN'
+      : 'CAPTURAR Y TRANSFORMAR';
+
   return (
     <main className="container">
       <header className="header">
@@ -500,6 +511,15 @@ export default function Home() {
               style={{ display: 'none' }}
             />
           </div>
+
+          {/* En iPad horizontal este botón se mostrará aquí (CSS) */}
+          <button
+            className="transform-button transform-button--left"
+            onClick={handleTransform}
+            disabled={isTransformDisabled}
+          >
+            {transformLabel}
+          </button>
         </div>
 
         {/* Sección derecha: Selector de personas/escenarios */}
@@ -536,11 +556,11 @@ export default function Home() {
           </div>
 
           <button
-            className="transform-button"
+            className="transform-button transform-button--right"
             onClick={handleTransform}
-            disabled={!(selectedScenario || customTargetUrl.trim()) || isProcessing || (!isCapturing && !uploadedImage)}
+            disabled={isTransformDisabled}
           >
-            {isProcessing ? 'PROCESANDO...' : useUpload ? 'TRANSFORMAR IMAGEN' : 'CAPTURAR Y TRANSFORMAR'}
+            {transformLabel}
           </button>
         </div>
       </div>

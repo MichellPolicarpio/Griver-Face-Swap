@@ -173,6 +173,17 @@ body {
   .scenarios-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  /* iPad horizontal: botón debajo del preview (columna izquierda) */
+  .transform-button--left {
+    display: inline-block;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+
+  .transform-button--right {
+    display: none;
+  }
 }
 
 /* Webcam Section */
@@ -409,6 +420,15 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(194, 163, 67, 0.35);
+}
+
+/* Por defecto: el botón vive en la columna derecha */
+.transform-button--left {
+  display: none;
+}
+
+.transform-button--right {
+  display: inline-block;
 }
 
 .transform-button:hover:not(:disabled) {
