@@ -424,11 +424,13 @@ body {
 
 /* Por defecto: el botón vive en la columna derecha */
 .transform-button--left {
-  display: none;
+  display: inline-block;
+  width: 100%;
+  margin-top: 0.75rem;
 }
 
 .transform-button--right {
-  display: inline-block;
+  display: none;
 }
 
 .transform-button:hover:not(:disabled) {

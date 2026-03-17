@@ -16,7 +16,7 @@ const scenarios: Scenario[] = [
   {
     id: 'woman-a1',
     name: 'Mujer A1',
-    imageUrl: 'https://i.ibb.co/m5Cb2ZS6/Image-9.jpg',
+    imageUrl: 'https://i.ibb.co/3m4K3DCm/Gemini-Generated-Image-lc7yw0lc7yw0lc7y.png',
     icon: 'A1',
   },
   {
@@ -525,7 +525,6 @@ export default function Home() {
         {/* Sección derecha: Selector de personas/escenarios */}
         <div className="scenarios-section">
           <h2>Selecciona una Persona</h2>
-          <p className="scenario-hint">Elige una persona de referencia (Mujer A1/A2/B1/B2, Hombre A1/A2/B1/B2); verás cómo te verías tú en su lugar.</p>
           <div className="scenarios-grid">
             {scenarios.map((scenario) => (
               <button
