@@ -10,8 +10,8 @@ type Scenario = {
   icon: string;
 };
 
-// IMPORTANTE: Las imágenes de escenario deben mostrar UNA PERSONA con la cara visible.
-// El modelo reemplaza la cara de esa persona por la tuya. Sin persona en la imagen → "No face found".
+type InfoSection = 'acerca' | 'ayuda' | 'privacidad' | 'griver';
+
 const scenarios: Scenario[] = [
   {
     id: 'woman-a1',
@@ -63,7 +63,6 @@ const scenarios: Scenario[] = [
   },
 ];
 
-// Mensajes de estado dinámicos mientras procesa (creativos, logísticos)
 const LOADING_STATUS_MESSAGES = [
   'Escaneando y analizando tu rostro...',
   'Ajustando proporciones faciales al escenario...',
@@ -81,7 +80,6 @@ const LOADING_STATUS_MESSAGES = [
   'Finalizando detalles del escenario...',
 ];
 
-// Datos curiosos de Griver (Grupo Inversor Veracruzano) para mostrar mientras carga
 const GRIVER_FACTS = [
   'GRIVER tiene su origen en 1925, en el gremio de Agentes Aduanales del Puerto de Veracruz.',
   'Es la agrupación de negocios aduanales más antigua de México.',
@@ -110,31 +108,43 @@ export default function Home() {
   const [curiousFactIndex, setCuriousFactIndex] = useState(0);
   const [statusMessageIndex, setStatusMessageIndex] = useState(0);
   const [fakeProgress, setFakeProgress] = useState(0);
-  
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [infoSection, setInfoSection] = useState<InfoSection | null>(null);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Animaciones del modal de carga
+  const closeInfo = () => setInfoSection(null);
+
+  const openSection = (section: InfoSection) => {
+    setInfoSection(section);
+    setIsMenuOpen(false);
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isMenuOpen) setIsMenuOpen(false);
+      if (infoSection) closeInfo();
+      if (resultImage && !isProcessing) setResultImage(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isMenuOpen, infoSection, resultImage, isProcessing]);
+
   useEffect(() => {
     if (!isProcessing) return;
-
-    // Mensaje de estado cada 2.5 s
     const statusInterval = setInterval(() => {
       setStatusMessageIndex((i) => (i + 1) % LOADING_STATUS_MESSAGES.length);
     }, 2500);
-
-    // Dato curioso cada 5 s
     const factInterval = setInterval(() => {
       setCuriousFactIndex((i) => (i + 1) % GRIVER_FACTS.length);
     }, 5000);
-
-    // Progreso: ~1 minuto + 10 segundos para llegar al 100% (1% cada 700 ms)
     const progressInterval = setInterval(() => {
       setFakeProgress((prev) => Math.min(100, prev + 1));
     }, 700);
-
     return () => {
       clearInterval(statusInterval);
       clearInterval(factInterval);
@@ -143,14 +153,11 @@ export default function Home() {
   }, [isProcessing]);
 
   useEffect(() => {
-    // Comprobar soporte básico de cámara en el navegador,
-    // pero NO llamar a getUserMedia automáticamente (iOS requiere gesto del usuario).
     if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
       setHasWebcam(true);
     } else {
       setHasWebcam(false);
     }
-
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -159,19 +166,15 @@ export default function Home() {
   }, []);
 
   const startWebcam = async () => {
-    // Intentar primero con facingMode (más compatible con móviles/iPad),
-    // y si falla hacer fallback a constraints básicas.
     const constraints: MediaStreamConstraints[] = [
       { video: { facingMode: 'user' } },
       { video: true },
     ];
-
     for (const constraint of constraints) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraint);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          // En iOS el video necesita llamar a play() explícitamente
           videoRef.current.play().catch(() => {});
           streamRef.current = stream;
           setHasWebcam(true);
@@ -179,13 +182,11 @@ export default function Home() {
           setUseUpload(false);
           setUploadedImage(null);
         }
-        return; // éxito, salir del loop
+        return;
       } catch (err) {
         console.warn('getUserMedia falló con constraint:', constraint, err);
       }
     }
-
-    // Si todos los intentos fallaron, no hay cámara disponible
     console.error('No se pudo acceder a la webcam en ningún modo');
     setHasWebcam(false);
     setError('No se pudo acceder a la webcam. Puedes subir una imagen en su lugar.');
@@ -194,57 +195,45 @@ export default function Home() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       setError('Por favor, selecciona un archivo de imagen válido');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      
-      // Si la imagen no es JPEG, convertirla usando canvas
       if (!result.startsWith('data:image/jpeg')) {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          
           if (!ctx) {
-            setUploadedImage(result); // Fallback a imagen original
+            setUploadedImage(result);
             setUseUpload(true);
             setError(null);
             return;
           }
-          
-          // Asegurar tamaño mínimo para mejor detección
           const minWidth = 640;
           const minHeight = 480;
           let width = img.width;
           let height = img.height;
-          
           if (width < minWidth || height < minHeight) {
             const scale = Math.max(minWidth / width, minHeight / height);
             width = Math.floor(width * scale);
             height = Math.floor(height * scale);
           }
-          
           canvas.width = width;
           canvas.height = height;
-          
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convertir a JPEG con alta calidad
           const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.95);
           setUploadedImage(jpegDataUrl);
           setUseUpload(true);
           setError(null);
         };
         img.onerror = () => {
-          setUploadedImage(result); // Fallback
+          setUploadedImage(result);
           setUseUpload(true);
           setError(null);
         };
@@ -254,8 +243,6 @@ export default function Home() {
         setUseUpload(true);
         setError(null);
       }
-      
-      // Detener webcam si está activa
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         setIsCapturing(false);
@@ -271,7 +258,6 @@ export default function Home() {
   };
 
   const switchToUpload = () => {
-    // Detener webcam si está activa
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -286,37 +272,24 @@ export default function Home() {
 
   const capturePhoto = (): string | null => {
     if (!videoRef.current || !canvasRef.current) return null;
-
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
     if (!ctx) return null;
-
-    // Asegurar tamaño mínimo para mejor detección de caras
     const minWidth = 640;
     const minHeight = 480;
-    
-    // Calcular dimensiones manteniendo aspect ratio
     let width = video.videoWidth;
     let height = video.videoHeight;
-    
     if (width < minWidth || height < minHeight) {
       const scale = Math.max(minWidth / width, minHeight / height);
       width = Math.floor(width * scale);
       height = Math.floor(height * scale);
     }
-    
     canvas.width = width;
     canvas.height = height;
-    
-    // Mejorar la calidad de renderizado
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(video, 0, 0, width, height);
-
-    // Convertir a base64 en formato JPEG con alta calidad
-    // Usar calidad 0.95 para mejor detección de caras
     return canvas.toDataURL('image/jpeg', 0.95);
   };
 
@@ -326,58 +299,39 @@ export default function Home() {
       setError('Selecciona un escenario o pega la URL de una imagen (con una persona visible)');
       return;
     }
-
     let photoBase64: string | null = null;
-
     if (useUpload && uploadedImage) {
-      // Usar imagen subida
       photoBase64 = uploadedImage;
     } else if (isCapturing) {
-      // Usar webcam
       photoBase64 = capturePhoto();
     }
-
     if (!photoBase64) {
-      setError(useUpload 
-        ? 'Por favor, sube una imagen primero' 
+      setError(useUpload
+        ? 'Por favor, sube una imagen primero'
         : 'No se pudo capturar la foto. Intenta subir una imagen.');
       return;
     }
-
     setIsProcessing(true);
     setError(null);
     setResultImage(null);
     setCuriousFactIndex(0);
     setStatusMessageIndex(0);
     setFakeProgress(0);
-
     try {
       const response = await fetch('/api/faceswap', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          swapImage: photoBase64,
-          targetImage: targetImageUrl,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ swapImage: photoBase64, targetImage: targetImageUrl }),
       });
-
       if (!response.ok) {
         let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { error: `Error HTTP ${response.status}: ${response.statusText}` };
-        }
+        try { errorData = await response.json(); } catch { errorData = { error: `Error HTTP ${response.status}: ${response.statusText}` }; }
         const errorMessage = errorData.error || 'Error al procesar la imagen';
         const errorDetails = errorData.details ? `\nDetalles: ${errorData.details}` : '';
         const suggestions = errorData.suggestions ? `\n\nSugerencias:\n${errorData.suggestions.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n')}` : '';
         throw new Error(`${errorMessage}${errorDetails}${suggestions}`);
       }
-
       const data = await response.json();
-      
       if (data.result) {
         setResultImage(data.result);
       } else {
@@ -393,7 +347,6 @@ export default function Home() {
 
   const downloadResult = () => {
     if (!resultImage) return;
-
     const link = document.createElement('a');
     link.href = resultImage;
     link.download = `face-swap-${selectedScenario?.id || 'custom'}-${Date.now()}.jpg`;
@@ -415,13 +368,244 @@ export default function Home() {
 
   return (
     <main className="container">
+      {/* ── Drawer overlay ── */}
+      <div
+        className={`drawer-overlay${isMenuOpen ? ' drawer-overlay--visible' : ''}`}
+        onClick={() => setIsMenuOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* ── Drawer lateral ── */}
+      <nav className={`drawer${isMenuOpen ? ' drawer--open' : ''}`} aria-label="Menú principal">
+        <div className="drawer-header">
+          <img src="/griver-logo.png" alt="Griver" className="drawer-logo" />
+          <span className="drawer-brand">GRIVER</span>
+          <button type="button" className="drawer-close" onClick={() => setIsMenuOpen(false)} aria-label="Cerrar menú">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        <div className="drawer-items">
+          <button type="button" className="drawer-item" onClick={() => openSection('acerca')}>
+            <svg className="drawer-item-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/><path d="M12 16v-4m0-4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <span>Acerca de</span>
+          </button>
+          <button type="button" className="drawer-item" onClick={() => openSection('ayuda')}>
+            <svg className="drawer-item-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.01 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span>Ayuda</span>
+          </button>
+          <button type="button" className="drawer-item" onClick={() => openSection('privacidad')}>
+            <svg className="drawer-item-icon" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>
+            <span>Aviso de Privacidad</span>
+          </button>
+          <button type="button" className="drawer-item" onClick={() => openSection('griver')}>
+            <svg className="drawer-item-icon" viewBox="0 0 24 24" fill="none"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span>Sobre GRIVER</span>
+          </button>
+        </div>
+
+        <div className="drawer-footer">
+          <span>&copy; {new Date().getFullYear()} Grupo Inversor Veracruzano</span>
+        </div>
+      </nav>
+
       <header className="header">
+        <button
+          type="button"
+          className="hamburger-button"
+          aria-label="Abrir menú"
+          onClick={() => setIsMenuOpen(true)}
+          disabled={isProcessing}
+        >
+          <span className="hamburger-lines" aria-hidden="true"><span /><span /><span /></span>
+        </button>
         <img src="/griver-logo.png" alt="Griver" className="header-logo" />
         <div className="header-titles">
           <h1>Griver</h1>
           <p>Simula cómo te verías en cada escenario</p>
         </div>
       </header>
+
+      {/* ── Modal informativo premium ── */}
+      {infoSection && (
+        <div className="info-overlay" onClick={closeInfo} role="presentation">
+          <div className="info-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="info-modal-close" onClick={closeInfo} aria-label="Cerrar">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M14 4L4 14M4 4l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </button>
+
+            {infoSection === 'acerca' && (
+              <div className="info-body">
+                <div className="info-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/><path d="M12 16v-4m0-4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </div>
+                <h2>Acerca de esta plataforma</h2>
+                <div className="info-divider" />
+                <p>
+                  Esta experiencia interactiva fue creada por el <strong>área de Marketing de GRIVER</strong> con el
+                  objetivo de acercar a colaboradores, clientes y visitantes al mundo de la logística internacional de
+                  una manera innovadora y entretenida.
+                </p>
+                <p>
+                  El proyecto nace bajo la dirección de <strong>Aracelly Morales</strong> y <strong>Samantha Audirac</strong>,
+                  quienes impulsaron la idea de combinar inteligencia artificial con la identidad corporativa del grupo
+                  para crear simulaciones visuales únicas.
+                </p>
+                <p>
+                  Mediante tecnología de intercambio facial, los usuarios pueden visualizarse dentro de escenarios
+                  reales del sector, mostrando cómo se verían en un entorno de logística, fortaleciendo el sentido de
+                  pertenencia y la conexión emocional con la industria logística.
+                </p>
+              </div>
+            )}
+
+            {infoSection === 'ayuda' && (
+              <div className="info-body">
+                <div className="info-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.01 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <h2>Cómo usar la plataforma</h2>
+                <div className="info-divider" />
+
+                <div className="info-step-card">
+                  <span className="info-step-num">1</span>
+                  <div>
+                    <strong>Elige tu método de captura</strong>
+                    <p>Selecciona <em>Webcam</em> para tomar una foto en vivo, o <em>Subir Imagen</em> para usar una
+                    fotografía que ya tengas en tu dispositivo. Ambos métodos funcionan igual de bien.</p>
+                  </div>
+                </div>
+                <div className="info-step-card">
+                  <span className="info-step-num">2</span>
+                  <div>
+                    <strong>Selecciona un escenario</strong>
+                    <p>Elige entre los perfiles de Hombre o Mujer disponibles. Cada uno representa un escenario
+                    logístico diferente. También puedes pegar la URL de cualquier imagen que contenga a una persona
+                    con el rostro visible.</p>
+                  </div>
+                </div>
+                <div className="info-step-card">
+                  <span className="info-step-num">3</span>
+                  <div>
+                    <strong>Genera tu simulación</strong>
+                    <p>Presiona el botón &ldquo;Capturar y Transformar&rdquo; o &ldquo;Transformar
+                    Imagen&rdquo;. La inteligencia artificial procesará tu fotografía y la integrará al
+                    escenario seleccionado. El proceso toma aproximadamente un minuto.</p>
+                  </div>
+                </div>
+                <div className="info-step-card">
+                  <span className="info-step-num">4</span>
+                  <div>
+                    <strong>Descarga y comparte</strong>
+                    <p>Una vez lista la imagen, podrás verla en pantalla y descargarla a tu dispositivo para
+                    compartirla con quien desees.</p>
+                  </div>
+                </div>
+
+                <div className="info-highlight">
+                  <strong>Tip para mejores resultados:</strong> Usa una foto con buena iluminación, rostro de frente,
+                  sin lentes de sol y con el encuadre centrado en tu cara. Esto ayuda a la IA a detectar tu rostro con
+                  mayor precisión.
+                </div>
+              </div>
+            )}
+
+            {infoSection === 'privacidad' && (
+              <div className="info-body">
+                <div className="info-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>
+                </div>
+                <h2>Aviso de Privacidad</h2>
+                <div className="info-divider" />
+                <p>
+                  En GRIVER nos tomamos muy en serio la privacidad de nuestros usuarios. A continuación, te
+                  informamos cómo se manejan tus datos al utilizar esta plataforma:
+                </p>
+                <ul className="info-privacy-list">
+                  <li>
+                    <strong>Las imágenes NO se almacenan.</strong> Ni GRIVER, ni esta plataforma, ni ningún tercero
+                    guarda, almacena o retiene las fotografías que subas o captures con la webcam.
+                  </li>
+                  <li>
+                    <strong>Uso exclusivo para el evento.</strong> Las imágenes se procesan en tiempo real únicamente
+                    para generar la simulación visual y se descartan inmediatamente después.
+                  </li>
+                  <li>
+                    <strong>Sin recopilación de datos personales.</strong> No se solicita nombre, correo electrónico ni
+                    ningún otro dato personal para utilizar la plataforma.
+                  </li>
+                  <li>
+                    <strong>Procesamiento seguro.</strong> El intercambio facial se realiza a través de una API externa
+                    cifrada (Replicate) que no conserva las imágenes una vez procesadas.
+                  </li>
+                  <li>
+                    <strong>Descarga voluntaria.</strong> Solo tú decides si descargas o compartes la imagen generada.
+                    GRIVER no tiene acceso a la imagen resultante.
+                  </li>
+                </ul>
+                <div className="info-highlight">
+                  Si tienes dudas o inquietudes sobre el manejo de tu información, puedes contactarnos a través de
+                  los canales oficiales de GRIVER.
+                </div>
+              </div>
+            )}
+
+            {infoSection === 'griver' && (
+              <div className="info-body">
+                <div className="info-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <h2>Sobre GRIVER</h2>
+                <div className="info-divider" />
+                <p>
+                  <strong>GRIVER (Grupo Inversor Veracruzano)</strong> es uno de los consorcios logísticos más
+                  importantes del Golfo de México, con raíces que se remontan a <strong>1925</strong> en el gremio de
+                  Agentes Aduanales del Puerto de Veracruz.
+                </p>
+                <p>
+                  Es la agrupación de negocios aduanales <strong>más antigua de México</strong>. Sus accionistas
+                  actuales representan la tercera y cuarta generación de los fundadores originales de la Aduana de
+                  Veracruz, algunos de los cuales también fundaron la primera Cámara Española de Comercio e Industria
+                  de Veracruz.
+                </p>
+
+                <h3 className="info-subtitle">Empresas del Grupo</h3>
+                <div className="info-companies-grid">
+                  <div className="info-company-card">
+                    <strong>RICSA</strong>
+                    <p>Fundada en 1995. Certificada en ISO 9001:2015 y HACCP. Especialista en agencia aduanal y
+                    comercio exterior.</p>
+                  </div>
+                  <div className="info-company-card">
+                    <strong>Friopuerto Veracruz</strong>
+                    <p>Primer frigorífico del Golfo de México (2015). Capacidad de 3,500 toneladas con cámaras
+                    hasta &minus;21&deg;C.</p>
+                  </div>
+                  <div className="info-company-card">
+                    <strong>POLARPORT</strong>
+                    <p>Más de 18,200 m² dedicados a cadena de frío en el puerto, garantizando la integridad de
+                    productos perecederos.</p>
+                  </div>
+                  <div className="info-company-card">
+                    <strong>RECO</strong>
+                    <p>División de soluciones tecnológicas para comercio exterior, incluyendo HS Coder
+                    (clasificación arancelaria con IA).</p>
+                  </div>
+                </div>
+
+                <h3 className="info-subtitle">Presencia</h3>
+                <p>
+                  GRIVER opera desde <strong>Veracruz</strong>, <strong>Manzanillo</strong>, <strong>Colima</strong> y
+                  <strong> Boca del Río</strong>, con un terreno de más de 20,000 m² en el Puerto de Veracruz.
+                </p>
+                <div className="info-highlight">
+                  Casi un siglo de historia, innovación y compromiso con el comercio exterior de México.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="content">
         {/* Sección izquierda: Webcam o Imagen Subida */}
@@ -447,7 +631,7 @@ export default function Home() {
               Subir Imagen
             </button>
           </div>
-          
+
           <div className="webcam-container">
             {useUpload ? (
               uploadedImage ? (
@@ -485,7 +669,7 @@ export default function Home() {
               <div className="webcam-placeholder">
                 {hasWebcam === false ? (
                   <>
-                    <p>📷 No hay webcam disponible</p>
+                    <p>No hay webcam disponible</p>
                     <p>Sube una imagen para continuar</p>
                   </>
                 ) : (
@@ -512,7 +696,6 @@ export default function Home() {
             />
           </div>
 
-          {/* En iPad horizontal este botón se mostrará aquí (CSS) */}
           <button
             className="transform-button transform-button--left"
             onClick={handleTransform}
@@ -567,7 +750,7 @@ export default function Home() {
       {/* Error */}
       {error && (
         <div className="error-message">
-          <span>!</span> 
+          <span>!</span>
           <div className="error-content">
             {error.split('\n').map((line, index) => (
               <div key={index} className={line.startsWith('Sugerencias:') || /^\d+\./.test(line.trim()) ? 'error-suggestion' : ''}>
@@ -578,7 +761,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Modal único: carga con datos curiosos → resultado en el mismo popup */}
+      {/* Modal único: carga con datos curiosos / resultado */}
       {(isProcessing || resultImage) && (
         <div
           className="result-popup-overlay"
@@ -590,35 +773,21 @@ export default function Home() {
           >
             {isProcessing ? (
               <div className="modal-loading-content">
-                {/* Logo */}
                 <img src="/griver-logo.png" alt="Griver" className="modal-loading-logo" />
-
-                {/* Título */}
                 <div>
                   <h2 className="modal-loading-title">Estamos creando tu simulación</h2>
-                  <p className="modal-loading-subtitle">Esto puede tardar hasta un minuto — ¡vale la pena!</p>
+                  <p className="modal-loading-subtitle">Esto puede tardar hasta un minuto</p>
                 </div>
-
-                {/* Barra de progreso */}
                 <div className="modal-progress-wrapper">
                   <div className="modal-progress-track">
-                    <div
-                      className="modal-progress-fill"
-                      style={{ width: `${fakeProgress}%` }}
-                    />
+                    <div className="modal-progress-fill" style={{ width: `${fakeProgress}%` }} />
                   </div>
                   <span className="modal-progress-pct">{Math.round(fakeProgress)}%</span>
                 </div>
-
-                {/* Mensaje de estado dinámico */}
                 <div className="modal-status-row">
-                  <span className="modal-status-dots">
-                    <span /><span /><span />
-                  </span>
+                  <span className="modal-status-dots"><span /><span /><span /></span>
                   <p className="modal-status-text">{LOADING_STATUS_MESSAGES[statusMessageIndex]}</p>
                 </div>
-
-                {/* Divisor + dato curioso */}
                 <div className="modal-facts-divider">
                   <span className="modal-facts-divider-line" />
                   <span className="modal-facts-divider-label">¿Sabías que...?</span>
