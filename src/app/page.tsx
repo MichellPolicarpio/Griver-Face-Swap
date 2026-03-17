@@ -14,28 +14,52 @@ type Scenario = {
 // El modelo reemplaza la cara de esa persona por la tuya. Sin persona en la imagen → "No face found".
 const scenarios: Scenario[] = [
   {
-    id: 'woman-a',
-    name: 'Mujer A',
-    imageUrl: 'https://i.postimg.cc/W4TRPH6F/Image-(2).jpg',
-    icon: 'A',
+    id: 'woman-a1',
+    name: 'Mujer A1',
+    imageUrl: 'https://i.ibb.co/m5Cb2ZS6/Image-9.jpg',
+    icon: 'A1',
   },
   {
-    id: 'woman-b',
-    name: 'Mujer B',
-    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800',
-    icon: 'B',
+    id: 'woman-a2',
+    name: 'Mujer A2',
+    imageUrl: 'https://i.ibb.co/RfjX1dh/Image-5.jpg',
+    icon: 'A2',
   },
   {
-    id: 'man-a',
-    name: 'Hombre A',
+    id: 'woman-b1',
+    name: 'Mujer B1',
+    imageUrl: 'https://i.ibb.co/gZy7R3pz/Image-7.jpg',
+    icon: 'B1',
+  },
+  {
+    id: 'woman-b2',
+    name: 'Mujer B2',
+    imageUrl: 'https://i.ibb.co/WWZJPH4M/Image-4.jpg',
+    icon: 'B2',
+  },
+  {
+    id: 'man-a1',
+    name: 'Hombre A1',
     imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb0b90c07c5?w=800',
-    icon: 'A',
+    icon: 'A1',
   },
   {
-    id: 'man-b',
-    name: 'Hombre B',
+    id: 'man-a2',
+    name: 'Hombre A2',
     imageUrl: 'https://images.unsplash.com/photo-1525130413817-d45c1d127c42?w=800',
-    icon: 'B',
+    icon: 'A2',
+  },
+  {
+    id: 'man-b1',
+    name: 'Hombre B1',
+    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800',
+    icon: 'B1',
+  },
+  {
+    id: 'man-b2',
+    name: 'Hombre B2',
+    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800',
+    icon: 'B2',
   },
 ];
 
@@ -445,7 +469,7 @@ export default function Home() {
         {/* Sección derecha: Selector de personas/escenarios */}
         <div className="scenarios-section">
           <h2>Selecciona una Persona</h2>
-          <p className="scenario-hint">Elige una persona de referencia (Mujer A/B, Hombre A/B); verás cómo te verías tú en su lugar.</p>
+          <p className="scenario-hint">Elige una persona de referencia (Mujer A1/A2/B1/B2, Hombre A1/A2/B1/B2); verás cómo te verías tú en su lugar.</p>
           <div className="scenarios-grid">
             {scenarios.map((scenario) => (
               <button
