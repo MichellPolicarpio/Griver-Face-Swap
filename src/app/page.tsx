@@ -633,6 +633,16 @@ export default function Home() {
           </div>
 
           <div className="webcam-container">
+            {/* Video siempre montado para que videoRef esté disponible */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="webcam-video"
+              style={{ display: !useUpload && isCapturing ? 'block' : 'none' }}
+            />
+
             {useUpload ? (
               uploadedImage ? (
                 <div className="uploaded-image-container">
@@ -657,15 +667,7 @@ export default function Home() {
                   </button>
                 </div>
               )
-            ) : isCapturing ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="webcam-video"
-              />
-            ) : (
+            ) : !isCapturing ? (
               <div className="webcam-placeholder">
                 {hasWebcam === false ? (
                   <>
@@ -685,7 +687,7 @@ export default function Home() {
                   </>
                 )}
               </div>
-            )}
+            ) : null}
             <canvas ref={canvasRef} style={{ display: 'none' }} />
             <input
               ref={fileInputRef}

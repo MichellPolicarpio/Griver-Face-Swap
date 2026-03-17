@@ -484,6 +484,77 @@ body {
   }
 }
 
+/* ─── Ajustes para laptops (pantallas medianas) ─── */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .container {
+    max-width: 1200px;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+  }
+
+  .header-logo {
+    height: 46px;
+  }
+
+  .header h1 {
+    font-size: 1.6rem;
+  }
+
+  .header p {
+    font-size: 0.9rem;
+  }
+
+  .content {
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .webcam-container {
+    padding: 0.75rem;
+  }
+
+  .scenarios-grid {
+    gap: 0.65rem;
+  }
+
+  .scenario-button {
+    padding: 1rem;
+  }
+
+  .scenario-icon {
+    font-size: 2.1rem;
+  }
+
+  .scenario-name {
+    font-size: 0.9rem;
+  }
+
+  .mode-button {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .transform-button {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    letter-spacing: 1.2px;
+  }
+
+  .custom-url-section label {
+    font-size: 0.88rem;
+  }
+
+  .custom-url-input {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+  }
+}
+
 /* ─── Ajustes específicos para tablet (iPad) ─── */
 @media (min-width: 601px) and (max-width: 1024px) {
   .container {
