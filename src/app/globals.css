@@ -25,6 +25,8 @@ body {
   background: linear-gradient(145deg, var(--color-darker) 0%, var(--color-dark) 50%, #252525 100%);
   color: var(--color-text);
   min-height: 100vh;
+  /* iOS/iPadOS: evita recortes por barras del navegador */
+  min-height: 100svh;
   line-height: 1.6;
 }
 
@@ -88,6 +90,88 @@ body {
 @media (max-width: 1024px) {
   .content {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Ajustes específicos para tablet (iPad) ─── */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .container {
+    padding: 1.25rem;
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .header-logo {
+    height: 48px;
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+  }
+
+  .content {
+    gap: 1.25rem;
+  }
+
+  .webcam-container {
+    padding: 0.75rem;
+    /* limita el alto para que no empuje todo fuera de pantalla */
+    max-height: 42svh;
+  }
+
+  .uploaded-image {
+    max-height: 80%;
+  }
+
+  .scenarios-section {
+    gap: 1rem;
+  }
+
+  .scenario-hint {
+    margin: -0.25rem 0 0.75rem 0;
+  }
+
+  .scenarios-grid {
+    gap: 0.75rem;
+  }
+
+  .scenario-button {
+    padding: 1.1rem;
+  }
+
+  .scenario-icon {
+    font-size: 2.1rem;
+  }
+
+  .transform-button {
+    padding: 1.1rem 1.25rem;
+    font-size: 1rem;
+    letter-spacing: 1.2px;
+  }
+
+  .result-popup {
+    max-height: 90svh;
+    overflow: auto;
+  }
+}
+
+/* iPad en horizontal: usa 2 columnas para evitar scroll excesivo */
+@media (min-width: 900px) and (max-width: 1024px) and (orientation: landscape) {
+  .content {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: start;
+  }
+
+  .webcam-container {
+    aspect-ratio: 16/9;
+    max-height: 56svh;
+  }
+
+  .scenarios-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

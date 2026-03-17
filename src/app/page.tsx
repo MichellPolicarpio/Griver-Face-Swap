@@ -40,7 +40,7 @@ const scenarios: Scenario[] = [
   {
     id: 'man-a1',
     name: 'Hombre A1',
-    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb0b90c07c5?w=800',
+    imageUrl: 'https://i.ibb.co/bg5dmJ5w/Image-3-1.jpg',
     icon: 'A1',
   },
   {
@@ -105,7 +105,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [hasWebcam, setHasWebcam] = useState<boolean | null>(null);
-  const [useUpload, setUseUpload] = useState(false);
+  const [useUpload, setUseUpload] = useState(true);
   const [customTargetUrl, setCustomTargetUrl] = useState('');
   const [curiousFactIndex, setCuriousFactIndex] = useState(0);
   const [statusMessageIndex, setStatusMessageIndex] = useState(0);
@@ -270,6 +270,20 @@ export default function Home() {
     startWebcam();
   };
 
+  const switchToUpload = () => {
+    // Detener webcam si está activa
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsCapturing(false);
+    setUseUpload(true);
+    setError(null);
+  };
+
   const capturePhoto = (): string | null => {
     if (!videoRef.current || !canvasRef.current) return null;
 
@@ -414,7 +428,7 @@ export default function Home() {
             <button
               className={`mode-button ${useUpload ? 'active' : ''}`}
               onClick={() => {
-                setUseUpload(true);
+                switchToUpload();
                 fileInputRef.current?.click();
               }}
               disabled={isProcessing}
@@ -424,17 +438,30 @@ export default function Home() {
           </div>
           
           <div className="webcam-container">
-            {useUpload && uploadedImage ? (
-              <div className="uploaded-image-container">
-                <img src={uploadedImage} alt="Imagen subida" className="uploaded-image" />
-                <button
-                  className="change-image-button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing}
-                >
-                  Cambiar Imagen
-                </button>
-              </div>
+            {useUpload ? (
+              uploadedImage ? (
+                <div className="uploaded-image-container">
+                  <img src={uploadedImage} alt="Imagen subida" className="uploaded-image" />
+                  <button
+                    className="change-image-button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                  >
+                    Cambiar Imagen
+                  </button>
+                </div>
+              ) : (
+                <div className="webcam-placeholder">
+                  <p>Sube una imagen para continuar</p>
+                  <button
+                    className="change-image-button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                  >
+                    Seleccionar Imagen
+                  </button>
+                </div>
+              )
             ) : isCapturing ? (
               <video
                 ref={videoRef}
@@ -451,7 +478,16 @@ export default function Home() {
                     <p>Sube una imagen para continuar</p>
                   </>
                 ) : (
-                  <p>Iniciando webcam...</p>
+                  <>
+                    <p>Presiona para iniciar la webcam</p>
+                    <button
+                      className="change-image-button"
+                      onClick={startWebcam}
+                      disabled={isProcessing}
+                    >
+                      Iniciar Webcam
+                    </button>
+                  </>
                 )}
               </div>
             )}
