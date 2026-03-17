@@ -104,6 +104,7 @@ export default function Home() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [hasWebcam, setHasWebcam] = useState<boolean | null>(null);
   const [useUpload, setUseUpload] = useState(true);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const [customTargetUrl, setCustomTargetUrl] = useState('');
   const [curiousFactIndex, setCuriousFactIndex] = useState(0);
   const [statusMessageIndex, setStatusMessageIndex] = useState(0);
@@ -173,15 +174,18 @@ export default function Home() {
     for (const constraint of constraints) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraint);
-        if (videoRef.current) {
+        streamRef.current = stream;
+        setHasWebcam(true);
+        setUseUpload(false);
+        setUploadedImage(null);
+        setIsCapturing(true);
+
+        // Esperar a que el <video> esté montado y asignar stream
+        setTimeout(() => {
+          if (!videoRef.current) return;
           videoRef.current.srcObject = stream;
           videoRef.current.play().catch(() => {});
-          streamRef.current = stream;
-          setHasWebcam(true);
-          setIsCapturing(true);
-          setUseUpload(false);
-          setUploadedImage(null);
-        }
+        }, 0);
         return;
       } catch (err) {
         console.warn('getUserMedia falló con constraint:', constraint, err);
@@ -254,6 +258,7 @@ export default function Home() {
   const switchToWebcam = () => {
     setUseUpload(false);
     setUploadedImage(null);
+    setIsVideoReady(false);
     startWebcam();
   };
 
@@ -266,6 +271,7 @@ export default function Home() {
       videoRef.current.srcObject = null;
     }
     setIsCapturing(false);
+    setIsVideoReady(false);
     setUseUpload(true);
     setError(null);
   };
@@ -280,6 +286,10 @@ export default function Home() {
     const minHeight = 480;
     let width = video.videoWidth;
     let height = video.videoHeight;
+
+    // Si el video aún no reporta dimensiones (común en iPad), abortar con null
+    if (!width || !height) return null;
+
     if (width < minWidth || height < minHeight) {
       const scale = Math.max(minWidth / width, minHeight / height);
       width = Math.floor(width * scale);
@@ -358,7 +368,8 @@ export default function Home() {
   const isTransformDisabled =
     !(selectedScenario || customTargetUrl.trim()) ||
     isProcessing ||
-    (!isCapturing && !uploadedImage);
+    (!isCapturing && !uploadedImage) ||
+    (!useUpload && isCapturing && !isVideoReady);
 
   const transformLabel = isProcessing
     ? 'PROCESANDO...'
@@ -641,6 +652,7 @@ export default function Home() {
               muted
               className="webcam-video"
               style={{ display: !useUpload && isCapturing ? 'block' : 'none' }}
+              onLoadedMetadata={() => setIsVideoReady(true)}
             />
 
             {useUpload ? (
