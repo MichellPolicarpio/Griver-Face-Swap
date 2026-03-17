@@ -22,7 +22,7 @@ const scenarios: Scenario[] = [
   {
     id: 'woman-a2',
     name: 'Mujer A2',
-    imageUrl: 'https://i.ibb.co/RfjX1dh/Image-5.jpg',
+    imageUrl: 'https://i.ibb.co/tptNL6NP/Gemini-Generated-Image-qxpkz9qxpkz9qxpk.png',
     icon: 'A2',
   },
   {
