@@ -52,13 +52,13 @@ const scenarios: Scenario[] = [
   {
     id: 'man-b1',
     name: 'Hombre B1',
-    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800',
+    imageUrl: 'https://i.ibb.co/qLdfryKK/Image-8.jpg',
     icon: 'B1',
   },
   {
     id: 'man-b2',
     name: 'Hombre B2',
-    imageUrl: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800',
+    imageUrl: 'https://i.ibb.co/7dMHSkWd/Image-6.jpg',
     icon: 'B2',
   },
 ];
