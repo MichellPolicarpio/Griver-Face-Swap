@@ -80,6 +80,14 @@ const LOADING_STATUS_MESSAGES = [
   'Finalizando detalles del escenario...',
 ];
 
+const EXTENDED_LOADING_MESSAGES = [
+  'Esto está tardando más de lo normal... seguimos trabajando.',
+  'Estamos generando tu imagen a partir de las métricas de tu cara.',
+  'Optimizando detalles finos (iluminación, textura y contorno).',
+  'Haciendo un segundo pase para mejorar la calidad.',
+  'Estamos teniendo problemas de procesar un rostro tan estético.',
+];
+
 const GRIVER_FACTS = [
   'GRIVER tiene su origen en 1925, en el gremio de Agentes Aduanales del Puerto de Veracruz.',
   'Es la agrupación de negocios aduanales más antigua de México.',
@@ -98,6 +106,7 @@ const GRIVER_FACTS = [
 export default function Home() {
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +117,7 @@ export default function Home() {
   const [curiousFactIndex, setCuriousFactIndex] = useState(0);
   const [statusMessageIndex, setStatusMessageIndex] = useState(0);
   const [fakeProgress, setFakeProgress] = useState(0);
+  const [isExtendedLoading, setIsExtendedLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [infoSection, setInfoSection] = useState<InfoSection | null>(null);
 
@@ -151,6 +161,19 @@ export default function Home() {
       clearInterval(progressInterval);
     };
   }, [isProcessing]);
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setIsExtendedLoading(false);
+      return;
+    }
+    if (fakeProgress < 100) {
+      setIsExtendedLoading(false);
+      return;
+    }
+    const t = setTimeout(() => setIsExtendedLoading(true), 1200);
+    return () => clearTimeout(t);
+  }, [isProcessing, fakeProgress]);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
@@ -257,6 +280,7 @@ export default function Home() {
   const switchToWebcam = () => {
     setUseUpload(false);
     setUploadedImage(null);
+    setCapturedPhoto(null);
     startWebcam();
   };
 
@@ -269,11 +293,18 @@ export default function Home() {
       videoRef.current.srcObject = null;
     }
     setIsCapturing(false);
+    setCapturedPhoto(null);
     setUseUpload(true);
     setError(null);
   };
 
-  const capturePhoto = (): string | null => {
+  const retakePhoto = () => {
+    setCapturedPhoto(null);
+    setError(null);
+    startWebcam();
+  };
+
+  const snapPhoto = (): string | null => {
     if (!videoRef.current || !canvasRef.current) return null;
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -302,22 +333,30 @@ export default function Home() {
     return canvas.toDataURL('image/jpeg', 0.95);
   };
 
+  const handleCapture = () => {
+    const photo = snapPhoto();
+    if (!photo) return;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setIsCapturing(false);
+    setCapturedPhoto(photo);
+    setError(null);
+  };
+
   const handleTransform = async () => {
     const targetImageUrl = customTargetUrl.trim() || selectedScenario?.imageUrl;
     if (!targetImageUrl) {
       setError('Selecciona un escenario o pega la URL de una imagen (con una persona visible)');
       return;
     }
-    let photoBase64: string | null = null;
-    if (useUpload && uploadedImage) {
-      photoBase64 = uploadedImage;
-    } else if (isCapturing) {
-      photoBase64 = capturePhoto();
-    }
+    const photoBase64 = useUpload ? uploadedImage : capturedPhoto;
     if (!photoBase64) {
       setError(useUpload
         ? 'Por favor, sube una imagen primero'
-        : 'No se pudo capturar la foto. Intenta subir una imagen.');
+        : 'Primero captura tu foto con la webcam');
       return;
     }
     setIsProcessing(true);
@@ -364,16 +403,11 @@ export default function Home() {
     document.body.removeChild(link);
   };
 
-  const isTransformDisabled =
-    !(selectedScenario || customTargetUrl.trim()) ||
-    isProcessing ||
-    (!isCapturing && !uploadedImage);
-
-  const transformLabel = isProcessing
-    ? 'PROCESANDO...'
-    : useUpload
-      ? 'TRANSFORMAR IMAGEN'
-      : 'CAPTURAR Y TRANSFORMAR';
+  const hasSourceImage = useUpload ? !!uploadedImage : !!capturedPhoto;
+  const isTransformDisabled = isProcessing || !hasSourceImage;
+  const transformLabel = isProcessing ? 'PROCESANDO...' : 'TRANSFORMAR IMAGEN';
+  const statusMessages = isExtendedLoading ? EXTENDED_LOADING_MESSAGES : LOADING_STATUS_MESSAGES;
+  const statusMessage = statusMessages[statusMessageIndex % statusMessages.length];
 
   return (
     <main className="container">
@@ -652,6 +686,34 @@ export default function Home() {
               style={{ display: !useUpload && isCapturing ? 'block' : 'none' }}
             />
 
+            {!useUpload && isCapturing && (
+              <button
+                className="capture-button"
+                onClick={handleCapture}
+                disabled={isProcessing}
+                aria-label="Capturar foto"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="4" fill="currentColor" />
+                  <path d="M9 3H5a2 2 0 00-2 2v3m0 6v3a2 2 0 002 2h4m6 0h3a2 2 0 002-2v-3m0-6V5a2 2 0 00-2-2h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                CAPTURAR FOTO
+              </button>
+            )}
+
+            {!useUpload && capturedPhoto && (
+              <div className="uploaded-image-container">
+                <img src={capturedPhoto} alt="Foto capturada" className="uploaded-image" />
+                <button
+                  className="change-image-button"
+                  onClick={retakePhoto}
+                  disabled={isProcessing}
+                >
+                  Volver a tomar
+                </button>
+              </div>
+            )}
+
             {useUpload ? (
               uploadedImage ? (
                 <div className="uploaded-image-container">
@@ -676,7 +738,7 @@ export default function Home() {
                   </button>
                 </div>
               )
-            ) : !isCapturing ? (
+            ) : !isCapturing && !capturedPhoto ? (
               <div className="webcam-placeholder">
                 {hasWebcam === false ? (
                   <>
@@ -784,10 +846,18 @@ export default function Home() {
           >
             {isProcessing ? (
               <div className="modal-loading-content">
-                <img src="/griver-logo.png" alt="Griver" className="modal-loading-logo" />
+                <img
+                  src="/griver-logo.png"
+                  alt="Griver"
+                  className={`modal-loading-logo${isExtendedLoading ? ' modal-loading-logo--extended' : ''}`}
+                />
                 <div>
-                  <h2 className="modal-loading-title">Estamos creando tu simulación</h2>
-                  <p className="modal-loading-subtitle">Esto puede tardar hasta un minuto</p>
+                  <h2 className="modal-loading-title">
+                    {isExtendedLoading ? 'Afinando los últimos detalles...' : 'Estamos creando tu simulación'}
+                  </h2>
+                  <p className="modal-loading-subtitle">
+                    {isExtendedLoading ? 'Gracias por tu paciencia: a veces tarda un poco más.' : 'Esto puede tardar hasta un minuto'}
+                  </p>
                 </div>
                 <div className="modal-progress-wrapper">
                   <div className="modal-progress-track">
@@ -797,7 +867,7 @@ export default function Home() {
                 </div>
                 <div className="modal-status-row">
                   <span className="modal-status-dots"><span /><span /><span /></span>
-                  <p className="modal-status-text">{LOADING_STATUS_MESSAGES[statusMessageIndex]}</p>
+                  <p className="modal-status-text">{statusMessage}</p>
                 </div>
                 <div className="modal-facts-divider">
                   <span className="modal-facts-divider-line" />
